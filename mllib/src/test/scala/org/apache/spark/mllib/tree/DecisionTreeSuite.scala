@@ -21,7 +21,7 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.FunSuite
 
 import org.apache.spark.SparkContext
-import org.apache.spark.mllib.regression.LabeledPoint
+import org.apache.spark.mllib.point.WeightedLabeledPoint
 import org.apache.spark.mllib.tree.impurity.{Entropy, Gini, Variance}
 import org.apache.spark.mllib.tree.model.Filter
 import org.apache.spark.mllib.tree.model.Split
@@ -442,45 +442,45 @@ class DecisionTreeSuite extends FunSuite with BeforeAndAfterAll {
 
 object DecisionTreeSuite {
 
-  def generateOrderedLabeledPointsWithLabel0(): Array[LabeledPoint] = {
-    val arr = new Array[LabeledPoint](1000)
+  def generateOrderedLabeledPointsWithLabel0(): Array[WeightedLabeledPoint] = {
+    val arr = new Array[WeightedLabeledPoint](1000)
     for (i <- 0 until 1000){
-      val lp = new LabeledPoint(0.0, Vectors.dense(i.toDouble, 1000.0 - i))
+      val lp = new WeightedLabeledPoint(0.0, Vectors.dense(i.toDouble, 1000.0 - i))
       arr(i) = lp
     }
     arr
   }
 
-  def generateOrderedLabeledPointsWithLabel1(): Array[LabeledPoint] = {
-    val arr = new Array[LabeledPoint](1000)
+  def generateOrderedLabeledPointsWithLabel1(): Array[WeightedLabeledPoint] = {
+    val arr = new Array[WeightedLabeledPoint](1000)
     for (i <- 0 until 1000){
-      val lp = new LabeledPoint(1.0, Vectors.dense(i.toDouble, 999.0 - i))
+      val lp = new WeightedLabeledPoint(1.0, Vectors.dense(i.toDouble, 999.0 - i))
       arr(i) = lp
     }
     arr
   }
 
-  def generateOrderedLabeledPoints(): Array[LabeledPoint] = {
-    val arr = new Array[LabeledPoint](1000)
+  def generateOrderedLabeledPoints(): Array[WeightedLabeledPoint] = {
+    val arr = new Array[WeightedLabeledPoint](1000)
     for (i <- 0 until 1000){
       if (i < 600){
-        val lp = new LabeledPoint(0.0, Vectors.dense(i.toDouble, 1000.0 - i))
+        val lp = new WeightedLabeledPoint(0.0, Vectors.dense(i.toDouble, 1000.0 - i))
         arr(i) = lp
       } else {
-        val lp = new LabeledPoint(1.0, Vectors.dense(i.toDouble, 1000.0 - i))
+        val lp = new WeightedLabeledPoint(1.0, Vectors.dense(i.toDouble, 1000.0 - i))
         arr(i) = lp
       }
     }
     arr
   }
 
-  def generateCategoricalDataPoints(): Array[LabeledPoint] = {
-    val arr = new Array[LabeledPoint](1000)
+  def generateCategoricalDataPoints(): Array[WeightedLabeledPoint] = {
+    val arr = new Array[WeightedLabeledPoint](1000)
     for (i <- 0 until 1000){
       if (i < 600){
-        arr(i) = new LabeledPoint(1.0, Vectors.dense(0.0, 1.0))
+        arr(i) = new WeightedLabeledPoint(1.0, Vectors.dense(0.0, 1.0))
       } else {
-        arr(i) = new LabeledPoint(0.0, Vectors.dense(1.0, 0.0))
+        arr(i) = new WeightedLabeledPoint(0.0, Vectors.dense(1.0, 0.0))
       }
     }
     arr
