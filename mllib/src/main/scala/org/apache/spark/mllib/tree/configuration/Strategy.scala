@@ -43,6 +43,7 @@ import org.apache.spark.mllib.tree.configuration.QuantileStrategy._
  *                     datasets. For example, an entry (n -> k) implies the a weight of k is
  *                     applied to an instance with label n. It's important to note that labels
  *                     are zero-index and take values 0, 1, 2, ... , numClasses.
+ * @param boostingIterations Number of iterations for boosting algorithms
  *
  */
 @Experimental
@@ -55,7 +56,8 @@ class Strategy (
     val quantileCalculationStrategy: QuantileStrategy = Sort,
     val categoricalFeaturesInfo: Map[Int, Int] = Map[Int, Int](),
     val maxMemoryInMB: Int = 128,
-    val labelWeights: Map[Int, Int] = Map[Int, Int]()) extends Serializable {
+    val labelWeights: Map[Int, Int] = Map[Int, Int](),
+    val boostingIterations: Int = 100) extends Serializable {
 
   require(numClassesForClassification >= 2)
   val isMulticlassClassification = numClassesForClassification > 2
