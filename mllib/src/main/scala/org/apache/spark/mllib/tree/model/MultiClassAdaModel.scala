@@ -46,7 +46,9 @@ class MultiClassAdaModel(
     val treePredictionsPerClassAndIteraton = for {
       k <- 0 until K
       m <- 0 until M
-    } yield ((k, alphas(m) * equalIdentity(k,trees(m).predict(testData))))
+      alpha = alphas(m)
+      treePredict = trees(m).predict(testData)
+    } yield ((k, alpha * equalIdentity(k,treePredict)))
 
     // Find prediction class
     treePredictionsPerClassAndIteraton

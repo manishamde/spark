@@ -47,13 +47,11 @@ object AdaBoost {
 
   private def classification(input: RDD[WeightedLabeledPoint], strategy: Strategy): Model = {
 
-    // TODO: Move to strategy
-    val M = 100
-
+    // Initialize SAMME parameters
+    val M = strategy.boostingIterations
+    val K = strategy.numClassesForClassification
     val alphas = new Array[Double](M)
     val trees = new Array[DecisionTreeModel](M)
-
-    val K = strategy.numClassesForClassification
 
     // SAMME
     var weightedInput = input
