@@ -51,7 +51,7 @@ object AdaBoost {
     val M = strategy.boostingIterations
     val K = strategy.numClassesForClassification
     val alphas = new Array[Double](M)
-    val trees = new Array[DecisionTreeModel](M)
+    val trees = new Array[Model](M)
 
     // SAMME
     var weightedInput = input

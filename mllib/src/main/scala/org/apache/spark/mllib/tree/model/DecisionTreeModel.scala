@@ -21,6 +21,7 @@ import org.apache.spark.annotation.Experimental
 import org.apache.spark.mllib.tree.configuration.Algo._
 import org.apache.spark.rdd.RDD
 import org.apache.spark.mllib.linalg.Vector
+import org.apache.spark.mllib.model.Model
 
 /**
  * :: Experimental ::
@@ -29,7 +30,8 @@ import org.apache.spark.mllib.linalg.Vector
  * @param algo algorithm type -- classification or regression
  */
 @Experimental
-class DecisionTreeModel(val topNode: Node, val algo: Algo) extends Serializable {
+class DecisionTreeModel(val topNode: Node, val algo: Algo)
+  extends Model with Serializable {
 
   /**
    * Predict values for a single data point using the model trained.
@@ -41,13 +43,4 @@ class DecisionTreeModel(val topNode: Node, val algo: Algo) extends Serializable 
     topNode.predictIfLeaf(features)
   }
 
-  /**
-   * Predict values for the given data set using the model trained.
-   *
-   * @param features RDD representing data points to be predicted
-   * @return RDD[Int] where each entry contains the corresponding prediction
-   */
-  def predict(features: RDD[Vector]): RDD[Double] = {
-    features.map(x => predict(x))
-  }
 }

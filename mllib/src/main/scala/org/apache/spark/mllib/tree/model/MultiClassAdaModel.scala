@@ -31,7 +31,7 @@ import org.apache.spark.mllib.model.Model
 @Experimental
 class MultiClassAdaModel(
     alphas: Array[Double],
-    trees: Array[DecisionTreeModel],
+    trees: Array[Model],
     strategy: Strategy) extends Model {
 
   /**

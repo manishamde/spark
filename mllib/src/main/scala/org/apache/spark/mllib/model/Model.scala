@@ -27,7 +27,7 @@ import org.apache.spark.rdd.RDD
  * belongs. The categories are represented by double values: 0.0, 1.0, 2.0, etc.
  */
 @Experimental
-private[tree] abstract class Model extends Serializable {
+abstract class Model extends Serializable {
   /**
    * Predict values for the given data set using the model trained.
    *

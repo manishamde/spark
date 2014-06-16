@@ -21,6 +21,8 @@ import org.apache.spark.annotation.Experimental
 import org.apache.spark.mllib.tree.impurity.Impurity
 import org.apache.spark.mllib.tree.configuration.Algo._
 import org.apache.spark.mllib.tree.configuration.QuantileStrategy._
+import org.apache.spark.mllib.tree.configuration.FeatureSubsetStrategy._
+
 
 /**
  * :: Experimental ::
@@ -44,6 +46,9 @@ import org.apache.spark.mllib.tree.configuration.QuantileStrategy._
  *                     applied to an instance with label n. It's important to note that labels
  *                     are zero-index and take values 0, 1, 2, ... , numClasses.
  * @param boostingIterations Number of iterations for boosting algorithms
+ * @param featureSubsetStrategy Indicates the features used for training a tree
+ * @param isRandomForest Indicates whether a random forest is being created
+ *
  *
  */
 @Experimental
@@ -56,10 +61,17 @@ class Strategy (
     val quantileCalculationStrategy: QuantileStrategy = Sort,
     val categoricalFeaturesInfo: Map[Int, Int] = Map[Int, Int](),
     val maxMemoryInMB: Int = 128,
-    val labelWeights: Map[Int, Int] = Map[Int, Int](),
-    val boostingIterations: Int = 100) extends Serializable {
+    val labelWeights: Map[Int, Double] = Map[Int, Double](),
+    val boostingIterations: Int = 100,
+    val numTrees: Int = 1,
+    val featureSubsetStrategy: FeatureSubsetStrategy = All,
+    val isRandomForest: Boolean = false) extends Serializable {
 
   require(numClassesForClassification >= 2)
+  if (isRandomForest) {
+    require(numTrees > 1)
+    require(labelWeights.size == 0)
+  }
   val isMulticlassClassification = numClassesForClassification > 2
   val isMulticlassWithCategoricalFeatures
     = isMulticlassClassification && (categoricalFeaturesInfo.size > 0)
