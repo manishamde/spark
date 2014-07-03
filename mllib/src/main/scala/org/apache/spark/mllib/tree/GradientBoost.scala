@@ -65,8 +65,8 @@ object GradientBoost {
       trees(m) = model
       gammas(m) = gamma
       // TODO: Think about checkpointing for deeper iterations
-      data = data.map(point => WeightedLabeledPoint(calculate(model, point), point.features))
       //update data with pseudo-residuals
+      data = data.map(point => WeightedLabeledPoint(calculate(model, point), point.features))
       m += 1
     }
 
