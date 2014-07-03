@@ -38,6 +38,12 @@ class AdaBoost (private val strategy: Strategy) extends Serializable with Loggin
 
 }
 
+
+
+
+
+
+
 object AdaBoost {
 
   def train(input: RDD[LabeledPoint], strategy: Strategy): Model = {
