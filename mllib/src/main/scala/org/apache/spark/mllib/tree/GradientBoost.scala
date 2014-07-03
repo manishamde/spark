@@ -51,7 +51,6 @@ object GradientBoost {
     val M = strategy.boostingIterations
     val K = strategy.numClassesForClassification
     val trees = new Array[Model](M + 1)
-    val gammas = new Array[Double](M + 1)
 
     // 1. Initialize tree
     trees(0) = new DecisionTree(strategy).train(input)
@@ -63,7 +62,6 @@ object GradientBoost {
       // TODO: Perform line search for non-least squares calculations
       val gamma = 1
       trees(m) = model
-      gammas(m) = gamma
       // TODO: Think about checkpointing for deeper iterations
       //update data with pseudo-residuals
       data = data.map(point => WeightedLabeledPoint(calculate(model, point), point.features))
@@ -71,7 +69,7 @@ object GradientBoost {
     }
 
     // 3. Output classifier
-    new GradientBoostingModel(trees, gammas)
+    new GradientBoostingModel(trees)
 
   }
 

@@ -20,7 +20,7 @@ package org.apache.spark.mllib.tree.model
 import org.apache.spark.mllib.model.Model
 import org.apache.spark.mllib.linalg.Vector
 
-class GradientBoostingModel(trees: Array[Model], gammas: Array[Double]) extends Model {
+class GradientBoostingModel(trees: Array[Model]) extends Model {
   /**
    * Predict values for a single data point using the model trained.
    *
@@ -28,10 +28,7 @@ class GradientBoostingModel(trees: Array[Model], gammas: Array[Double]) extends 
    * @return predicted category from the trained model
    */
   override def predict(testData: Vector): Double = {
-
-    val treesAndGammas = trees zip gammas
-
-    treesAndGammas.map{case(tree, gamma) => gamma*tree.predict(testData)}.sum
+    trees.map(tree => tree.predict(testData)).sum
   }
 
 }
