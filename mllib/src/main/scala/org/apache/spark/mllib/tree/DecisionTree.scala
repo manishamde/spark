@@ -216,7 +216,8 @@ class DecisionTree (private val strategy: Strategy) extends Serializable with Lo
     val split = nodeSplitStats._1
     val stats = nodeSplitStats._2
     val nodeIndex = math.pow(2, level).toInt - 1 + index
-    val isLeaf = (stats.gain <= 0) || (level == strategy.maxDepth - 1)
+    // TODO: Add min gain
+    val isLeaf = (stats.gain <= 0.00) || (level == strategy.maxDepth - 1)
     val node = new Node(nodeIndex, stats.predict, isLeaf, Some(split), None, None, Some(stats))
     logDebug("Node = " + node)
     // TODO: Change for RF

@@ -17,14 +17,17 @@
 
 package org.apache.spark.mllib.tree
 
+import org.apache.spark.SparkContext._
+
 import org.apache.spark.mllib.tree.configuration.Strategy
 import org.apache.spark.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.mllib.point.WeightedLabeledPoint
 import org.apache.spark.mllib.model.Model
-import org.apache.spark.mllib.regression.LabeledPoint
+import org.apache.spark.mllib.regression.{RegressionModel, LabeledPoint}
 import org.apache.spark.mllib.tree.model.GradientBoostingModel
 import org.apache.spark.mllib.tree.configuration.Algo._
+import org.apache.spark.mllib.util.MLUtils
 
 
 class GradientBoost (private val strategy: Strategy) extends Serializable with Logging {
@@ -38,33 +41,47 @@ class GradientBoost (private val strategy: Strategy) extends Serializable with L
 
 }
 
-object GradientBoost {
+object GradientBoost extends Logging {
 
   def train(input: RDD[LabeledPoint], strategy: Strategy): Model = {
     val weightedInput = input.map(x => WeightedLabeledPoint(x.label, x.features))
-    new AdaBoost(strategy).train(weightedInput)
+    new GradientBoost(strategy).train(weightedInput)
   }
 
   private def regression(input: RDD[WeightedLabeledPoint], strategy: Strategy): Model = {
 
-    // Initialize SAMME parameters
+    // Initialize gradient boosting parameters
     val M = strategy.boostingIterations
-    val K = strategy.numClassesForClassification
     val trees = new Array[Model](M + 1)
 
+    // Cache input
+    input.cache()
+
+    logDebug("##########")
+    logDebug("Building tree 0")
+    logDebug("##########")
+    var data = input
+
     // 1. Initialize tree
-    trees(0) = new DecisionTree(strategy).train(input)
+    val firstModel = new DecisionTree(strategy).train(data)
+    trees(0) = firstModel
+    logDebug("error of tree = " + meanSquaredError(firstModel, data))
+    logDebug(data.first.toString)
+
+    // psuedo-residual for second iteration
+    data = data.map(point => WeightedLabeledPoint(calculate(firstModel, point), point.features))
 
     var m = 1
-    var data = input
     while (m <= M) {
+      logDebug("###################################################")
+      logDebug("Gradient boosting tree iteration " + m)
+      logDebug("###################################################")
       val model = new DecisionTree(strategy).train(data)
-      // TODO: Perform line search for non-least squares calculations
-      val gamma = 1
       trees(m) = model
-      // TODO: Think about checkpointing for deeper iterations
+      logDebug("error of tree = " + meanSquaredError(model, data))
       //update data with pseudo-residuals
       data = data.map(point => WeightedLabeledPoint(calculate(model, point), point.features))
+      logDebug(data.first.toString)
       m += 1
     }
 
@@ -73,6 +90,20 @@ object GradientBoost {
 
   }
 
+  // TODO: Port this method to a generic metrics package
+  /**
+   * Calculates the mean squared error for regression.
+   */
+  private def meanSquaredError(tree: Model, data: RDD[WeightedLabeledPoint]): Double = {
+    data.map { y =>
+      val err = tree.predict(y.features) - y.label
+      err * err
+    }.mean()
+  }
+
+
+  // TODO: Pluggable loss functions
+  // TODO: Think about checkpointing for deeper iterations
   // TODO: Implement Stochastic gradient boosting
   // TODO: Add learning rate
 

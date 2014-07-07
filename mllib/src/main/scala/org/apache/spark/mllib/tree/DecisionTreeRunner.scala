@@ -47,7 +47,7 @@ object DecisionTreeRunner extends Logging {
     val testData = loadLabeledData(sc, fileName, dataset)
     val algo = Classification
     //val strategy = new Strategy(Classification, Gini, 3, 3)
-    val strategy = new Strategy(Classification, Gini, 3, 7, 300)
+    val strategy = new Strategy(Classification, Gini, 3, 7, 100)
     val model = DecisionTree.train(trainData, strategy)
 
     // Measure algorithm accuracy
