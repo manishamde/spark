@@ -17,6 +17,7 @@
 
 package org.apache.spark.mllib.tree
 
+import org.apache.spark.mllib.point.PointConverter._
 import org.apache.spark.annotation.Experimental
 import org.apache.spark.Logging
 import org.apache.spark.mllib.regression.LabeledPoint
@@ -276,9 +277,7 @@ object DecisionTree extends Serializable with Logging {
    * @return a DecisionTreeModel that can be used for prediction
   */
   def train(input: RDD[LabeledPoint], strategy: Strategy): Model = {
-    // Converting from standard instance format to weighted input format for tree training
-    val weightedInput = input.map(x => WeightedLabeledPoint(x.label, x.features))
-    new DecisionTree(strategy).train(weightedInput: RDD[WeightedLabeledPoint])
+    new DecisionTree(strategy).train(input)
   }
 
   /**
@@ -300,9 +299,7 @@ object DecisionTree extends Serializable with Logging {
       impurity: Impurity,
       maxDepth: Int): Model = {
     val strategy = new Strategy(algo, impurity, maxDepth)
-    // Converting from standard instance format to weighted input format for tree training
-    val weightedInput = input.map(x => WeightedLabeledPoint(x.label, x.features))
-    new DecisionTree(strategy).train(weightedInput: RDD[WeightedLabeledPoint])
+    new DecisionTree(strategy).train(input)
   }
 
   /**
@@ -326,9 +323,7 @@ object DecisionTree extends Serializable with Logging {
       maxDepth: Int,
       numClassesForClassification: Int): Model = {
     val strategy = new Strategy(algo, impurity, maxDepth, numClassesForClassification)
-    // Converting from standard instance format to weighted input format for tree training
-    val weightedInput = input.map(x => WeightedLabeledPoint(x.label, x.features))
-    new DecisionTree(strategy).train(weightedInput: RDD[WeightedLabeledPoint])
+    new DecisionTree(strategy).train(input)
   }
 
 
@@ -359,9 +354,7 @@ object DecisionTree extends Serializable with Logging {
       labelWeights: Map[Int, Double]): Model = {
     val strategy = new Strategy(algo, impurity, maxDepth, numClassesForClassification,
       labelWeights = labelWeights)
-    // Converting from standard instance format to weighted input format for tree training
-    val weightedInput = input.map(x => WeightedLabeledPoint(x.label, x.features))
-    new DecisionTree(strategy).train(weightedInput: RDD[WeightedLabeledPoint])
+    new DecisionTree(strategy).train(input)
   }
 
   /**
@@ -402,9 +395,7 @@ object DecisionTree extends Serializable with Logging {
       categoricalFeaturesInfo: Map[Int,Int]): Model = {
     val strategy = new Strategy(algo, impurity, maxDepth, numClassesForClassification, maxBins,
       quantileCalculationStrategy, categoricalFeaturesInfo, labelWeights = labelWeights)
-    // Converting from standard instance format to weighted input format for tree training
-    val weightedInput = input.map(x => WeightedLabeledPoint(x.label, x.features))
-    new DecisionTree(strategy).train(weightedInput: RDD[WeightedLabeledPoint])
+    new DecisionTree(strategy).train(input)
   }
 
   private val InvalidBinIndex = -1
