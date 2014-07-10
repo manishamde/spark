@@ -28,6 +28,7 @@ import org.apache.spark.mllib.regression.{RegressionModel, LabeledPoint}
 import org.apache.spark.mllib.tree.model.GradientBoostingModel
 import org.apache.spark.mllib.tree.configuration.Algo._
 import org.apache.spark.mllib.util.MLUtils
+import org.apache.spark.mllib.tree.loss.{LeastAbsoluteError, LeastSquaresError}
 
 
 class GradientBoost (private val strategy: Strategy) extends Serializable with Logging {
@@ -53,6 +54,9 @@ object GradientBoost extends Logging {
     // Initialize gradient boosting parameters
     val M = strategy.boostingIterations
     val trees = new Array[Model](M + 1)
+    // TODO: Add to strategy
+    //val loss = new LeastSquaresError()
+    val loss = new LeastAbsoluteError()
 
     // Cache input
     input.cache()
@@ -69,7 +73,9 @@ object GradientBoost extends Logging {
     logDebug(data.first.toString)
 
     // psuedo-residual for second iteration
-    data = data.map(point => WeightedLabeledPoint(calculate(firstModel, point), point.features))
+    data = data.map(point => WeightedLabeledPoint(loss.calculateResidual(firstModel, point),
+      point.features))
+
 
     var m = 1
     while (m <= M) {
@@ -80,7 +86,8 @@ object GradientBoost extends Logging {
       trees(m) = model
       logDebug("error of tree = " + meanSquaredError(model, data))
       //update data with pseudo-residuals
-      data = data.map(point => WeightedLabeledPoint(calculate(model, point), point.features))
+      data = data.map(point => WeightedLabeledPoint(loss.calculateResidual(model, point),
+        point.features))
       logDebug(data.first.toString)
       m += 1
     }
@@ -106,9 +113,5 @@ object GradientBoost extends Logging {
   // TODO: Think about checkpointing for deeper iterations
   // TODO: Implement Stochastic gradient boosting
   // TODO: Add learning rate
-
-  def calculate(model: Model, point: WeightedLabeledPoint): Double = {
-    point.label - model.predict(point.features)
-  }
 
 }

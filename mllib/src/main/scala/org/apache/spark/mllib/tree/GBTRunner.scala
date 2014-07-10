@@ -39,10 +39,10 @@ object GBTRunner {
     val sc = new SparkContext("local", "DecisionTree")
     //val fileName = "/Users/manish/Documents/code/mere_projects/data/cov_type/covtype.csv"
     //val dataset = "covtype"
-    val fileName = "/Users/manish/Documents/code/mere_projects/data/breast_cancer/bc.csv"
-    val dataset = "breast_cancer"
-    val input = loadLabeledData(sc, fileName, dataset)
-//    val input = LinearDataGenerator.generateLinearRDD(sc,10000,20,10)
+//    val fileName = "/Users/manish/Documents/code/mere_projects/data/breast_cancer/bc.csv"
+//    val dataset = "breast_cancer"
+//    val input = loadLabeledData(sc, fileName, dataset)
+    val input = LinearDataGenerator.generateLinearRDD(sc,10000,20,10)
 //    val input = MLUtils.loadLabeledData(sc,
 //      "/Users/manish/Documents/code/mere_projects/spark/mllib/data/ridge-data/lpsa.data")
 
