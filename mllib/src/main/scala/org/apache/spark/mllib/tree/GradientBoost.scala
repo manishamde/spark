@@ -55,8 +55,8 @@ object GradientBoost extends Logging {
     val M = strategy.boostingIterations
     val trees = new Array[Model](M + 1)
     // TODO: Add to strategy
-    //val loss = new LeastSquaresError()
-    val loss = new LeastAbsoluteError()
+    val loss = new LeastSquaresError()
+    // val loss = new LeastAbsoluteError()
 
     // Cache input
     input.cache()
