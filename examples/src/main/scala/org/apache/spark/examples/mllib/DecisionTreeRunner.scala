@@ -26,7 +26,7 @@ import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.mllib.tree.{DecisionTree, impurity}
 import org.apache.spark.mllib.tree.configuration.{Algo, Strategy}
 import org.apache.spark.mllib.tree.configuration.Algo._
-import org.apache.spark.mllib.tree.model.DecisionTreeModel
+import org.apache.spark.mllib.tree.model.TreeModel
 import org.apache.spark.mllib.util.MLUtils
 import org.apache.spark.rdd.RDD
 
@@ -149,7 +149,7 @@ object DecisionTreeRunner {
    * Calculates the classifier accuracy.
    */
   private def accuracyScore(
-      model: DecisionTreeModel,
+      model: TreeModel,
       data: RDD[LabeledPoint]): Double = {
     val correctCount = data.filter(y => model.predict(y.features) == y.label).count()
     val count = data.count()
@@ -159,7 +159,7 @@ object DecisionTreeRunner {
   /**
    * Calculates the mean squared error for regression.
    */
-  private def meanSquaredError(tree: DecisionTreeModel, data: RDD[LabeledPoint]): Double = {
+  private def meanSquaredError(tree: TreeModel, data: RDD[LabeledPoint]): Double = {
     data.map { y =>
       val err = tree.predict(y.features) - y.label
       err * err

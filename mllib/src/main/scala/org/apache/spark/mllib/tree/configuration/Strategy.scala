@@ -21,6 +21,7 @@ import org.apache.spark.annotation.Experimental
 import org.apache.spark.mllib.tree.impurity.Impurity
 import org.apache.spark.mllib.tree.configuration.Algo._
 import org.apache.spark.mllib.tree.configuration.QuantileStrategy._
+import org.apache.spark.mllib.tree.configuration.FeatureSubsetStrategy._
 
 /**
  * :: Experimental ::
@@ -39,6 +40,9 @@ import org.apache.spark.mllib.tree.configuration.QuantileStrategy._
  *                                zero-indexed.
  * @param maxMemoryInMB maximum memory in MB allocated to histogram aggregation. Default value is
  *                      128 MB.
+ * @param numTrees number of trees in random forest. Use 1 for decision tree construction.
+ * @param featureSubsetStrategy Indicates the features used for training a tree
+ * @param isRandomForest Indicates whether a random forest is being created
  *
  */
 @Experimental
@@ -50,11 +54,17 @@ class Strategy (
     val maxBins: Int = 100,
     val quantileCalculationStrategy: QuantileStrategy = Sort,
     val categoricalFeaturesInfo: Map[Int, Int] = Map[Int, Int](),
-    val maxMemoryInMB: Int = 128) extends Serializable {
+    val maxMemoryInMB: Int = 128,
+    val numTrees: Int = 1,
+    val featureSubsetStrategy: FeatureSubsetStrategy = All,
+    val isRandomForest: Boolean = false) extends Serializable {
 
   require(numClassesForClassification >= 2)
   val isMulticlassClassification = numClassesForClassification > 2
   val isMulticlassWithCategoricalFeatures
     = isMulticlassClassification && (categoricalFeaturesInfo.size > 0)
+  if (isRandomForest) {
+    require(numTrees > 1)
+  }
 
 }

@@ -17,39 +17,28 @@
 
 package org.apache.spark.mllib.tree.model
 
-import org.apache.spark.annotation.Experimental
-import org.apache.spark.mllib.tree.configuration.Algo._
-import org.apache.spark.rdd.RDD
+import org.apache.spark.mllib.tree.model.TreeModel
 import org.apache.spark.mllib.linalg.Vector
+import org.apache.spark.mllib.tree.configuration.Algo._
 
-/**
- * :: Experimental ::
- * Model to store the decision tree parameters
- * @param topNode root node
- * @param algo algorithm type -- classification or regression
- */
-@Experimental
-class DecisionTreeModel(
-    val topNode: Node,
-    val algo: Algo) extends TreeModel with Serializable {
+class RandomForestModel(
+    models: Array[DecisionTreeModel],
+    algo: Algo) extends TreeModel with Serializable {
 
   /**
    * Predict values for a single data point using the model trained.
    *
-   * @param features array representing a single data point
-   * @return Double prediction from the trained model
+   * @param testData array representing a single data point
+   * @return predicted category from the trained model
    */
-  override def predict(features: Vector): Double = {
-    topNode.predictIfLeaf(features)
+  override def predict(testData: Vector): Double = {
+    algo match {
+      case Classification =>
+        models.map(m => m.predict(testData)).groupBy(identity).mapValues(_.size).maxBy(_._2)._1
+      case Regression =>
+        val predictions = models.map(m => m.predict(testData))
+        predictions.sum / predictions.size
+    }
   }
 
-  /**
-   * Predict values for the given data set using the model trained.
-   *
-   * @param features RDD representing data points to be predicted
-   * @return RDD[Int] where each entry contains the corresponding prediction
-   */
-  override def predict(features: RDD[Vector]): RDD[Double] = {
-    features.map(x => predict(x))
-  }
 }
