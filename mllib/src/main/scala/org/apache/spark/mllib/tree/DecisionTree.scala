@@ -33,6 +33,7 @@ import org.apache.spark.mllib.tree.configuration.FeatureSubsetStrategy._
 import java.util.Random
 import cern.jet.random.Poisson
 import cern.jet.random.engine.DRand
+import org.apache.spark.mllib.tree.point.TreePoint
 
 /**
  * :: Experimental ::
@@ -52,13 +53,34 @@ class DecisionTree (private val strategy: Strategy) extends Serializable with Lo
    */
   def train(input: RDD[LabeledPoint]): TreeModel = {
 
-    // Cache input RDD for speedup during multiple passes.
-    input.cache()
     logDebug("algo = " + strategy.algo)
+
+    // Convert to internal point format for trees
+    val treeInput = {
+      if (strategy.isRandomForest) {
+        val poisson: Poisson = new Poisson(1, new DRand)
+        // TODO: Check whether operation can be performed in parallel
+        def poissonResamplingArray(): Array[Int] = {
+          val arr = new Array[Int](strategy.numTrees)
+          var i = 0
+          while (i < strategy.numTrees){
+            arr(i) = poisson.nextInt()
+            i += 1
+          }
+          arr
+        }
+        input.map(x => new TreePoint(x.label, x.features, Some(poissonResamplingArray())))
+      } else {
+        input.map(x => new TreePoint(x.label, x.features, None))
+      }
+    }
+    // Cache input RDD for speedup during multiple passes.
+    treeInput.cache()
+
 
     // Find the splits and the corresponding bins (interval between the splits) using a sample
     // of the input data.
-    val (splits, bins) = DecisionTree.findSplitsBins(input, strategy)
+    val (splits, bins) = DecisionTree.findSplitsBins(treeInput, strategy)
     val numBins = bins(0).length
     logDebug("numBins = " + numBins)
 
@@ -76,7 +98,6 @@ class DecisionTree (private val strategy: Strategy) extends Serializable with Lo
     val numFeatures = input.take(1)(0).features.size
     // num trees
     val numTrees = strategy.numTrees
-
 
     // TODO: Move the method elsewhere
     // Array for feature subset calculation
@@ -119,10 +140,6 @@ class DecisionTree (private val strategy: Strategy) extends Serializable with Lo
       }
 
 
-    // TODO: Create Poisson Resampling Weights
-    // TODO: Extend weighted labeled point
-    val poisson: Poisson = new Poisson(1, new DRand)
-
 
     /*
      * The main idea here is to perform level-wise training of the decision tree nodes thus
@@ -158,7 +175,7 @@ class DecisionTree (private val strategy: Strategy) extends Serializable with Lo
       }
 
       // Find best split for all nodes at a level.
-      val splitsStatsForLevel = DecisionTree.findBestSplits(input, parentImpurities,
+      val splitsStatsForLevel = DecisionTree.findBestSplits(treeInput, parentImpurities,
         strategy, level, filters, splits, bins, maxLevelForSingleGroup, numFeaturesPerNode,
         featureMaps)
 
@@ -382,7 +399,7 @@ object DecisionTree extends Serializable with Logging {
    * @return array of splits with best splits for all nodes at a given level.
    */
   protected[tree] def findBestSplits(
-      input: RDD[LabeledPoint],
+      input: RDD[TreePoint],
       parentImpurities: Array[Double],
       strategy: Strategy,
       level: Int,
@@ -435,7 +452,7 @@ object DecisionTree extends Serializable with Logging {
      * @return array of splits with best splits for all nodes at a given level.
    */
   private def findBestSplitsPerGroup(
-      input: RDD[LabeledPoint],
+      input: RDD[TreePoint],
       parentImpurities: Array[Double],
       strategy: Strategy,
       level: Int,
@@ -1319,7 +1336,7 @@ object DecisionTree extends Serializable with Logging {
    *         .spark.mllib.tree.model.Bin] of size (numFeatures, numSplits1)
    */
   protected[tree] def findSplitsBins(
-      input: RDD[LabeledPoint],
+      input: RDD[TreePoint],
       strategy: Strategy): (Array[Array[Split]], Array[Array[Bin]]) = {
     val count = input.count()
 

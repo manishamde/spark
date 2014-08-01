@@ -28,6 +28,7 @@ import org.apache.spark.mllib.tree.configuration.FeatureType._
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.mllib.util.LocalSparkContext
 import org.apache.spark.mllib.regression.LabeledPoint
+import org.apache.spark.mllib.tree.point.TreePoint
 
 class DecisionTreeSuite extends FunSuite with LocalSparkContext {
 
@@ -664,86 +665,85 @@ class DecisionTreeSuite extends FunSuite with LocalSparkContext {
 
 object DecisionTreeSuite {
 
-  def generateOrderedLabeledPointsWithLabel0(): Array[LabeledPoint] = {
-    val arr = new Array[LabeledPoint](1000)
+  def generateOrderedLabeledPointsWithLabel0(): Array[TreePoint] = {
+    val arr = new Array[TreePoint](1000)
     for (i <- 0 until 1000) {
-      val lp = new LabeledPoint(0.0, Vectors.dense(i.toDouble, 1000.0 - i))
+      val lp = new TreePoint(0.0, Vectors.dense(i.toDouble, 1000.0 - i), None)
       arr(i) = lp
     }
     arr
   }
 
-  def generateOrderedLabeledPointsWithLabel1(): Array[LabeledPoint] = {
-    val arr = new Array[LabeledPoint](1000)
+  def generateOrderedLabeledPointsWithLabel1(): Array[TreePoint] = {
+    val arr = new Array[TreePoint](1000)
     for (i <- 0 until 1000) {
-      val lp = new LabeledPoint(1.0, Vectors.dense(i.toDouble, 999.0 - i))
+      val lp = new TreePoint(1.0, Vectors.dense(i.toDouble, 999.0 - i), None)
       arr(i) = lp
     }
     arr
   }
 
-  def generateOrderedLabeledPoints(): Array[LabeledPoint] = {
-    val arr = new Array[LabeledPoint](1000)
+  def generateOrderedLabeledPoints(): Array[TreePoint] = {
+    val arr = new Array[TreePoint](1000)
     for (i <- 0 until 1000) {
       if (i < 600) {
-        val lp = new LabeledPoint(0.0, Vectors.dense(i.toDouble, 1000.0 - i))
+        val lp = new TreePoint(0.0, Vectors.dense(i.toDouble, 1000.0 - i), None)
         arr(i) = lp
       } else {
-        val lp = new LabeledPoint(1.0, Vectors.dense(i.toDouble, 1000.0 - i))
+        val lp = new TreePoint(1.0, Vectors.dense(i.toDouble, 1000.0 - i), None)
         arr(i) = lp
       }
     }
     arr
   }
 
-  def generateCategoricalDataPoints(): Array[LabeledPoint] = {
-    val arr = new Array[LabeledPoint](1000)
+  def generateCategoricalDataPoints(): Array[TreePoint] = {
+    val arr = new Array[TreePoint](1000)
     for (i <- 0 until 1000) {
       if (i < 600) {
-        arr(i) = new LabeledPoint(1.0, Vectors.dense(0.0, 1.0))
+        arr(i) = new TreePoint(1.0, Vectors.dense(0.0, 1.0), None)
       } else {
-        arr(i) = new LabeledPoint(0.0, Vectors.dense(1.0, 0.0))
+        arr(i) = new TreePoint(0.0, Vectors.dense(1.0, 0.0), None)
       }
     }
     arr
   }
 
-  def generateCategoricalDataPointsForMulticlass(): Array[LabeledPoint] = {
-    val arr = new Array[LabeledPoint](3000)
+  def generateCategoricalDataPointsForMulticlass(): Array[TreePoint] = {
+    val arr = new Array[TreePoint](3000)
     for (i <- 0 until 3000) {
       if (i < 1000) {
-        arr(i) = new LabeledPoint(2.0, Vectors.dense(2.0, 2.0))
+        arr(i) = new TreePoint(2.0, Vectors.dense(2.0, 2.0), None)
       } else if (i < 2000) {
-        arr(i) = new LabeledPoint(1.0, Vectors.dense(1.0, 2.0))
+        arr(i) = new TreePoint(1.0, Vectors.dense(1.0, 2.0), None)
       } else {
-        arr(i) = new LabeledPoint(2.0, Vectors.dense(2.0, 2.0))
+        arr(i) = new TreePoint(2.0, Vectors.dense(2.0, 2.0), None)
       }
     }
     arr
   }
 
-  def generateContinuousDataPointsForMulticlass(): Array[LabeledPoint] = {
-    val arr = new Array[LabeledPoint](3000)
+  def generateContinuousDataPointsForMulticlass(): Array[TreePoint] = {
+    val arr = new Array[TreePoint](3000)
     for (i <- 0 until 3000) {
       if (i < 2000) {
-        arr(i) = new LabeledPoint(2.0, Vectors.dense(2.0, i))
+        arr(i) = new TreePoint(2.0, Vectors.dense(2.0, i), None)
       } else {
-        arr(i) = new LabeledPoint(1.0, Vectors.dense(2.0, i))
+        arr(i) = new TreePoint(1.0, Vectors.dense(2.0, i), None)
       }
     }
     arr
   }
 
-  def generateCategoricalDataPointsForMulticlassForOrderedFeatures():
-    Array[LabeledPoint] = {
-    val arr = new Array[LabeledPoint](3000)
+  def generateCategoricalDataPointsForMulticlassForOrderedFeatures(): Array[TreePoint] = {
+    val arr = new Array[TreePoint](3000)
     for (i <- 0 until 3000) {
       if (i < 1000) {
-        arr(i) = new LabeledPoint(2.0, Vectors.dense(2.0, 2.0))
+        arr(i) = new TreePoint(2.0, Vectors.dense(2.0, 2.0), None)
       } else if (i < 2000) {
-        arr(i) = new LabeledPoint(1.0, Vectors.dense(1.0, 2.0))
+        arr(i) = new TreePoint(1.0, Vectors.dense(1.0, 2.0), None)
       } else {
-        arr(i) = new LabeledPoint(1.0, Vectors.dense(2.0, 2.0))
+        arr(i) = new TreePoint(1.0, Vectors.dense(2.0, 2.0), None)
       }
     }
     arr
