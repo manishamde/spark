@@ -15,13 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.spark.mllib.tree.point
-import org.apache.spark.mllib.linalg.Vector
+package org.apache.spark.mllib.tree.configuration
 
-import org.apache.spark.mllib.regression.LabeledPoint
+import org.apache.spark.annotation.Experimental
 
-//TODO: Use unsigned byte instead
-
-//TODO:  Add documentation
-
-case class TreePoint(label: Double, features: Array[Byte], treeWeights: Option[Array[Int]])
+/**
+ * :: Experimental ::
+ * Enum to describe whether a feature is "continuous" or "categorical"
+ */
+@Experimental
+object FeatureSubsetStrategy extends Enumeration {
+  type FeatureSubsetStrategy = Value
+  val All, Sqrt, Log2, OneThird = Value
+}

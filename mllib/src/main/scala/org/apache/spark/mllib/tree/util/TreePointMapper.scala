@@ -22,8 +22,12 @@ import org.apache.spark.mllib.tree.model.Bin
 import org.apache.spark.rdd.RDD
 import org.apache.spark.mllib.tree.point.TreePoint
 import org.apache.spark.mllib.tree.configuration.Strategy
+import cern.jet.random.Poisson
+import cern.jet.random.engine.DRand
 
 object TreePointMapper {
+
+  private val poisson: Poisson = new Poisson(1, new DRand)
 
   def featuresToBinMap(
       lpRdd: RDD[LabeledPoint],
@@ -38,6 +42,8 @@ object TreePointMapper {
 
     val isMulticlassClassification = strategy.isMulticlassClassification
 
+    // TODO: Move this logic to strategy class and add a more sophisticated evaluation.
+    val isRandomForest = strategy.numTrees > 1
 
     /**
      * Find bin for one (labeledPoint, feature).
@@ -136,7 +142,6 @@ object TreePointMapper {
       }
     }
 
-
     def lpToTp(labeledPoint: LabeledPoint): TreePoint = {
 
       val arr = new Array[Byte](numFeatures)
@@ -157,14 +162,28 @@ object TreePointMapper {
         }
         featureIndex += 1
       }
-      new TreePoint(labeledPoint.label, arr)
+
+      val treeWeights = if (isRandomForest) {
+        def poissonResamplingArray(): Array[Int] = {
+          // TODO: Check whether operation can be performed in parallel
+          val arr = new Array[Int](strategy.numTrees)
+          var i = 0
+          while (i < strategy.numTrees){
+            arr(i) = poisson.nextInt()
+            i += 1
+          }
+          arr
+        }
+        Some(poissonResamplingArray())
+      } else {
+        None
+      }
+      new TreePoint(labeledPoint.label, arr, treeWeights)
     }
 
     lpRdd.map(lp => lpToTp(lp))
 
   }
-
-
 
 
 }

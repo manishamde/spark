@@ -23,6 +23,7 @@ import org.apache.spark.annotation.Experimental
 import org.apache.spark.mllib.tree.impurity.Impurity
 import org.apache.spark.mllib.tree.configuration.Algo._
 import org.apache.spark.mllib.tree.configuration.QuantileStrategy._
+import org.apache.spark.mllib.tree.configuration.FeatureSubsetStrategy._
 
 /**
  * :: Experimental ::
@@ -40,6 +41,8 @@ import org.apache.spark.mllib.tree.configuration.QuantileStrategy._
  *                                k) implies the feature n is categorical with k categories 0,
  *                                1, 2, ... , k-1. It's important to note that features are
  *                                zero-indexed.
+ * @param numTrees number of trees trained in parallel
+ * @param featureSubsetStrategy indicates the number of features used for training a tree
  * @param maxMemoryInMB maximum memory in MB allocated to histogram aggregation. Default value is
  *                      128 MB.
  *
@@ -53,6 +56,8 @@ class Strategy (
     val maxBins: Int = 100,
     val quantileCalculationStrategy: QuantileStrategy = Sort,
     val categoricalFeaturesInfo: Map[Int, Int] = Map[Int, Int](),
+    val numTrees: Int = 1,
+    val featureSubsetStrategy: FeatureSubsetStrategy = All,
     val maxMemoryInMB: Int = 128) extends Serializable {
 
   if (algo == Classification) {
@@ -62,6 +67,9 @@ class Strategy (
     algo == Classification && numClassesForClassification > 2
   val isMulticlassWithCategoricalFeatures
     = isMulticlassClassification && (categoricalFeaturesInfo.size > 0)
+
+  // TODO: Need better check
+  val isRandomForest = numTrees > 1
 
   /**
    * Java-friendly constructor.
