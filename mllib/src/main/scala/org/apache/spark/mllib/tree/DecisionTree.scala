@@ -143,8 +143,7 @@ class DecisionTree (private val strategy: Strategy) extends Serializable with Lo
       val featureMaps = {
         val f = Array.ofDim[Map[Int, Int]](numNodesAtLevel)
         var levelNodeIndex = 0
-        if (strategy.numTrees > 1) {
-          // TODO: Need better check for RF
+        if (strategy.isRandomForest) {
           while (levelNodeIndex < numNodesAtLevel) {
             val randomFeatures = DecisionTree.shuffleArray(featureArray).slice(0, numFeaturesPerNode)
 
