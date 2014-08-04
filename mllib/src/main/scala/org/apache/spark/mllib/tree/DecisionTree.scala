@@ -28,6 +28,7 @@ import org.apache.spark.mllib.tree.impurity.Impurity
 import org.apache.spark.mllib.tree.model._
 import org.apache.spark.rdd.RDD
 import org.apache.spark.util.random.XORShiftRandom
+import org.apache.spark.mllib.tree.util.BinMapper
 
 /**
  * :: Experimental ::
@@ -89,6 +90,8 @@ class DecisionTree (private val strategy: Strategy) extends Serializable with Lo
     val maxLevelForSingleGroup = math.max(
       (math.log(maxNumberOfNodesPerGroup) / math.log(2)).floor.toInt, 0)
     logDebug("max level for single group = " + maxLevelForSingleGroup)
+
+    val binnedInput = BinMapper.featuresToBinMap(input, bins, strategy)
 
     /*
      * The main idea here is to perform level-wise training of the decision tree nodes thus
