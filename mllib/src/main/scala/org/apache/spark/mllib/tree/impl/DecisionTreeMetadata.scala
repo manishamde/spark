@@ -26,14 +26,15 @@ import org.apache.spark.mllib.tree.configuration.Strategy
 import org.apache.spark.mllib.tree.impurity.Impurity
 import org.apache.spark.rdd.RDD
 
-
 /**
  * Learning and dataset metadata for DecisionTree.
  *
  * @param numClasses    For classification: labels can take values {0, ..., numClasses - 1}.
  *                      For regression: fixed at 0 (no meaning).
+ * @param maxBins  Maximum number of bins, for all features.
  * @param featureArity  Map: categorical feature index --> arity.
  *                      I.e., the feature takes values in {0, ..., arity - 1}.
+ * @param numBins  Number of bins for each feature.
  */
 private[tree] class DecisionTreeMetadata(
     val numFeatures: Int,
@@ -42,6 +43,7 @@ private[tree] class DecisionTreeMetadata(
     val maxBins: Int,
     val featureArity: Map[Int, Int],
     val unorderedFeatures: Set[Int],
+    val numBins: Array[Int],
     val impurity: Impurity,
     val quantileStrategy: QuantileStrategy) extends Serializable {
 
@@ -57,10 +59,21 @@ private[tree] class DecisionTreeMetadata(
 
   def isContinuous(featureIndex: Int): Boolean = !featureArity.contains(featureIndex)
 
+  def numSplits(featureIndex: Int): Int = if (isUnordered(featureIndex)) {
+    numBins(featureIndex)
+  } else {
+    numBins(featureIndex) - 1
+  }
+
 }
 
 private[tree] object DecisionTreeMetadata {
 
+  /**
+   * Construct a [[DecisionTreeMetadata]] instance for this dataset and parameters.
+   * This computes which categorical features will be ordered vs. unordered,
+   * as well as the number of splits and bins for each feature.
+   */
   def buildMetadata(input: RDD[LabeledPoint], strategy: Strategy): DecisionTreeMetadata = {
 
     val numFeatures = input.take(1)(0).features.size
@@ -70,32 +83,48 @@ private[tree] object DecisionTreeMetadata {
       case Regression => 0
     }
 
-    val maxBins = math.min(strategy.maxBins, numExamples).toInt
-    val log2MaxBinsp1 = math.log(maxBins + 1) / math.log(2.0)
+    val maxPossibleBins = math.min(strategy.maxBins, numExamples).toInt
+    val log2MaxPossibleBinsp1 = math.log(maxPossibleBins + 1) / math.log(2.0)
 
+    // We check the number of bins here against maxPossibleBins.
+    // This needs to be checked here instead of in Strategy since maxPossibleBins can be modified
+    // based on the number of training examples.
     val unorderedFeatures = new mutable.HashSet[Int]()
+    val numBins = Array.fill[Int](numFeatures)(maxPossibleBins)
     if (numClasses > 2) {
       strategy.categoricalFeaturesInfo.foreach { case (f, k) =>
-        if (k - 1 < log2MaxBinsp1) {
+        if (k - 1 < log2MaxPossibleBinsp1) {
           // Note: The above check is equivalent to checking:
           //       numUnorderedBins = (1 << k - 1) - 1 < maxBins
           unorderedFeatures.add(f)
+          numBins(f) = numUnorderedBins(k)
         } else {
-          // TODO: Allow this case, where we simply will know nothing about some categories?
-          require(k < maxBins, s"maxBins (= $maxBins) should be greater than max categories " +
+          require(k <= maxPossibleBins,
+            s"maxBins (= $maxPossibleBins) should be greater than max categories " +
             s"in categorical features (>= $k)")
+          numBins(f) = k
         }
       }
     } else {
       strategy.categoricalFeaturesInfo.foreach { case (f, k) =>
-        require(k < maxBins, s"maxBins (= $maxBins) should be greater than max categories " +
-          s"in categorical features (>= $k)")
+        require(k <= maxPossibleBins,
+          s"DecisionTree requires maxBins (= $maxPossibleBins) >= max categories " +
+          s"in categorical features (= ${strategy.categoricalFeaturesInfo.values.max})")
+        numBins(f) = k
       }
     }
 
-    new DecisionTreeMetadata(numFeatures, numExamples, numClasses, maxBins,
-      strategy.categoricalFeaturesInfo, unorderedFeatures.toSet,
+    new DecisionTreeMetadata(numFeatures, numExamples, numClasses, numBins.max,
+      strategy.categoricalFeaturesInfo, unorderedFeatures.toSet, numBins,
       strategy.impurity, strategy.quantileCalculationStrategy)
+  }
+
+  /**
+   * Given the arity of a categorical feature (arity = number of categories),
+   * return the number of bins for the feature if it is to be treated as an unordered feature.
+   */
+  def numUnorderedBins(arity: Int): Int = {
+    (1 << arity - 1) - 1
   }
 
 }
