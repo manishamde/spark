@@ -21,6 +21,9 @@ import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.mllib.tree.model.Bin
 import org.apache.spark.rdd.RDD
 
+import cern.jet.random.engine.DRand
+import cern.jet.random.Poisson
+
 
 /**
  * Internal representation of LabeledPoint for DecisionTree.
@@ -36,8 +39,12 @@ import org.apache.spark.rdd.RDD
  * @param label  Label from LabeledPoint
  * @param binnedFeatures  Binned feature values.
  *                        Same length as LabeledPoint.features, but values are bin indices.
+ * @param treeWeights weights for each tree in a decision forest
  */
-private[tree] class TreePoint(val label: Double, val binnedFeatures: Array[Int])
+private[tree] class TreePoint(
+    val label: Double,
+    val binnedFeatures: Array[Int],
+    val treeWeights: Option[Array[Int]])
   extends Serializable {
 }
 
@@ -56,19 +63,25 @@ private[tree] object TreePoint {
       bins: Array[Array[Bin]],
       metadata: DecisionTreeMetadata): RDD[TreePoint] = {
     input.map { x =>
-      TreePoint.labeledPointToTreePoint(x, bins, metadata)
+      TreePoint.labeledPointToTreePoint(x, bins, metadata, metadata.isDecisionForest, metadata.numTrees)
     }
   }
+
+  private val poisson: Poisson = new Poisson(1, new DRand)
 
   /**
    * Convert one LabeledPoint into its TreePoint representation.
    * @param bins      Bins for features, of size (numFeatures, numBins).
    * @param metadata  DecisionTree training info, used for dataset metadata.
+   * @param isDecisionForest Check whether a decision forest is being trained
+   * @param numTrees Number of trees training simultaneously (1 for decision tree)
    */
   private def labeledPointToTreePoint(
       labeledPoint: LabeledPoint,
       bins: Array[Array[Bin]],
-      metadata: DecisionTreeMetadata): TreePoint = {
+      metadata: DecisionTreeMetadata,
+      isDecisionForest: Boolean,
+      numTrees: Int): TreePoint = {
     val numFeatures = labeledPoint.features.size
     val arr = new Array[Int](numFeatures)
     var featureIndex = 0
@@ -78,7 +91,22 @@ private[tree] object TreePoint {
       featureIndex += 1
     }
 
-    new TreePoint(labeledPoint.label, arr)
+    val treeWeights = if (isDecisionForest) {
+      def poissonResamplingArray(): Array[Int] = {
+        val arr = new Array[Int](numTrees)
+        var i = 0
+        while (i < numTrees){
+          arr(i) = poisson.nextInt()
+          i += 1
+        }
+        arr
+      }
+      Some(poissonResamplingArray())
+    } else {
+      None
+    }
+
+    new TreePoint(labeledPoint.label, arr, treeWeights)
   }
 
   /**

@@ -182,7 +182,7 @@ private[tree] object Node {
    * Return the maximum number of nodes which can be in the given level of the tree.
    * @param level  Level of tree (0 = root).
    */
-  def maxNodesInLevel(level: Int): Int = 1 << level
+  def maxNodesInLevel(level: Int, numTrees: Int): Int = (1 << level) * numTrees
 
   /**
    * Return the maximum number of nodes which can be in or above the given level of the tree

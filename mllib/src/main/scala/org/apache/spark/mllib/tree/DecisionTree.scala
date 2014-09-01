@@ -86,28 +86,15 @@ class DecisionTree (private val strategy: Strategy) extends Serializable with Lo
     // depth of the decision tree
     val maxDepth = strategy.maxDepth
     // the max number of nodes possible given the depth of the tree, plus 1
-    val maxNumNodes_p1 = Node.maxNodesInLevel(maxDepth + 1)
+    // TODO: Move the multiplicative constant into the Node class
+    val maxNumNodes_p1 = Node.maxNodesInLevel(maxDepth + 1, metadata.numTrees)
     // Initialize an array to hold parent impurity calculations for each node.
     val parentImpurities = new Array[Double](maxNumNodes_p1)
     // dummy value for top node (updated during first split calculation)
     val nodes = new Array[Node](maxNumNodes_p1)
 
     // Calculate level for single group construction
-
-    // Max memory usage for aggregates
-    val maxMemoryUsage = strategy.maxMemoryInMB * 1024 * 1024
-    logDebug("max memory usage for aggregates = " + maxMemoryUsage + " bytes.")
-    // TODO: Calculate memory usage more precisely.
-    val numElementsPerNode = DecisionTree.getElementsPerNode(metadata)
-
-    logDebug("numElementsPerNode = " + numElementsPerNode)
-    val arraySizePerNode = 8 * numElementsPerNode // approx. memory usage for bin aggregate array
-    val maxNumberOfNodesPerGroup = math.max(maxMemoryUsage / arraySizePerNode, 1)
-    logDebug("maxNumberOfNodesPerGroup = " + maxNumberOfNodesPerGroup)
-    // nodes at a level is 2^level. level is zero indexed.
-    val maxLevelForSingleGroup = math.max(
-      (math.log(maxNumberOfNodesPerGroup) / math.log(2)).floor.toInt, 0)
-    logDebug("max level for single group = " + maxLevelForSingleGroup)
+    val maxLevelForSingleGroup = DecisionTree.calculateMaxLevelForSingleGroup(strategy, metadata)
 
     timer.stop("init")
 
@@ -173,7 +160,7 @@ class DecisionTree (private val strategy: Strategy) extends Serializable with Lo
         timer.stop("extractInfoForLowerLevels")
         logDebug("final best split = " + split)
       }
-      require(Node.maxNodesInLevel(level) == splitsStatsForLevel.length)
+      require(Node.maxNodesInLevel(level, metadata.numTrees) == splitsStatsForLevel.length)
       // Check whether all the nodes at the current level at leaves.
       val allLeaf = splitsStatsForLevel.forall(_._2.gain <= 0)
       logDebug("all leaf = " + allLeaf)
@@ -635,8 +622,8 @@ object DecisionTree extends Serializable with Logging {
 
     // numNodes:  Number of nodes in this (level of tree, group),
     //            where nodes at deeper (larger) levels may be divided into groups.
-    val numNodes = Node.maxNodesInLevel(level) / numGroups
-    logDebug("numNodes = " + numNodes)
+    val numNodesAtLevel = Node.maxNodesInLevel(level, metadata.numTrees) / numGroups
+    logDebug("numNodes = " + numNodesAtLevel)
 
     logDebug("numFeatures = " + metadata.numFeatures)
     logDebug("numClasses = " + metadata.numClasses)
@@ -645,7 +632,7 @@ object DecisionTree extends Serializable with Logging {
       metadata.isMulticlassWithCategoricalFeatures)
 
     // shift when more than one group is used at deep tree level
-    val groupShift = numNodes * groupIndex
+    val groupShift = numNodesAtLevel * groupIndex
 
     // Used for treePointToNodeIndex to get an index for this (level, group).
     // - Node.maxNodesInSubtree(level - 1) corrects for nodes before this level.
@@ -686,7 +673,7 @@ object DecisionTree extends Serializable with Logging {
       // If the example does not reach this level, then nodeIndex < 0.
       // If the example reaches this level but is handled in a different group,
       //  then either nodeIndex < 0 (previous group) or nodeIndex >= numNodes (later group).
-      if (nodeIndex >= 0 && nodeIndex < numNodes) {
+      if (nodeIndex >= 0 && nodeIndex < numNodesAtLevel) {
         if (metadata.unorderedFeatures.isEmpty) {
           orderedBinSeqOp(agg, treePoint, nodeIndex)
         } else {
@@ -699,17 +686,17 @@ object DecisionTree extends Serializable with Logging {
     // Calculate bin aggregates.
     timer.start("aggregation")
     val binAggregates: DTStatsAggregator = {
-      val initAgg = new DTStatsAggregator(metadata, numNodes)
+      val initAgg = new DTStatsAggregator(metadata, numNodesAtLevel)
       input.treeAggregate(initAgg)(binSeqOp, DTStatsAggregator.binCombOp)
     }
     timer.stop("aggregation")
 
     // Calculate best splits for all nodes at a given level
     timer.start("chooseSplits")
-    val bestSplits = new Array[(Split, InformationGainStats)](numNodes)
+    val bestSplits = new Array[(Split, InformationGainStats)](numNodesAtLevel)
     // Iterating over all nodes at this level
     var nodeIndex = 0
-    while (nodeIndex < numNodes) {
+    while (nodeIndex < numNodesAtLevel) {
       val nodeImpurity = parentImpurities(globalNodeIndexOffset + nodeIndex)
       logDebug("node impurity = " + nodeImpurity)
       bestSplits(nodeIndex) =
@@ -1075,6 +1062,36 @@ object DecisionTree extends Serializable with Logging {
       j += 1
     }
     categories
+  }
+
+  /**
+   * Method to find the maximum level for training all nodes at a level using a single group
+   */
+  private[tree] def calculateMaxLevelForSingleGroup(
+      strategy: Strategy,
+      metadata: DecisionTreeMetadata): Int = {
+    // TODO: Calculate memory usage more precisely.
+
+    // Max memory usage for aggregates
+    val maxMemoryUsage = strategy.maxMemoryInMB * 1024 * 1024
+    logDebug("max memory usage for aggregates = " + maxMemoryUsage + " bytes.")
+
+    val numElementsPerNode = DecisionTree.getElementsPerNode(metadata)
+    logDebug("numElementsPerNode = " + numElementsPerNode)
+
+    val arraySizePerNode = 8 * numElementsPerNode // approx. memory usage for bin aggregate array
+    val maxNumberOfNodesPerGroup = math.max(maxMemoryUsage / arraySizePerNode, 1)
+    logDebug("maxNumberOfNodesPerGroup = " + maxNumberOfNodesPerGroup)
+
+    // nodes at a level is 2^level. level is zero indexed.
+    val maxLevelForSingleGroup
+      = math.max(log2(maxNumberOfNodesPerGroup / strategy.numTrees).floor.toInt, 0)
+    logDebug("max level for single group = " + maxLevelForSingleGroup)
+    maxLevelForSingleGroup
+  }
+
+  private[tree] def log2(input: Double): Double = {
+    math.log(input) / math.log(2)
   }
 
 }
